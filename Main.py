@@ -7,13 +7,11 @@ import matplotlib
 import io
 import time
 
-# Токен бота
 API_TOKEN = 'token'
 
 bot = telebot.TeleBot(API_TOKEN)
 matplotlib.use('agg')
 
-# Флаг Скриннера
 screener = False
 
 # Список криптовалют, которые будут отображаться в боте
@@ -29,7 +27,6 @@ crypto_list = [
     {'name': 'Ripple', 'ticker': 'XRPUSDT'},
 ]
 
-# Словарь данных о криптовалюте, которые будут отображаться в боте
 crypto_data = {}
 
 # Функция для мониторинга криптовалют
@@ -39,13 +36,9 @@ def monitor_crypto(message):
     # Если флаг Screener = True, то начинаем мониторинг
     if screener:
         for crypto in crypto_list:
-            # Получаем текущий курс криптовалюты из словаря crypto_data
             current_rate = crypto_data[crypto['ticker']]['close'].iloc[-1]
-            # Обновляем данные по криптовалюте
             update_crypto_data(crypto['ticker'])
-            # Получаем новый курс криптовалюты
             new_rate = crypto_data[crypto['ticker']]['close'].iloc[-1]
-            # Если курс изменился, отправляем сообщение
             if new_rate != current_rate:
                 change = round(((new_rate - current_rate) / current_rate) * 100, 2)
                 if change >= 0:
@@ -129,30 +122,22 @@ def handle_message(message):
             if message.text == crypto['name']:
                 update_crypto_data(crypto['ticker'])
                 current_crypto_data = crypto_data[crypto['ticker']]
-                # Получаем данные за последние 6 дней
                 last_6_days_data = current_crypto_data[current_crypto_data['open_time'] > datetime.now() - timedelta(days=7)]
-                # Рисуем график изменения курса
                 plt.plot(last_6_days_data['open_time'], last_6_days_data['open'])
                 plt.title(f'{crypto["name"]} rate for the last 6 days')
                 plt.xlabel('Date')
                 plt.ylabel('Rate, USD')
-                # Сохраняем график в буфер обмена
                 buffer = io.BytesIO()
                 plt.savefig(buffer, format='png')
                 buffer.seek(0)
-                # Отправляем изображение и текущий курс
                 bot.send_photo(message.chat.id, photo=buffer.getvalue())
                 dollar = '💵'
                 bot.send_message(message.chat.id, f'{crypto["name"]} - {current_crypto_data.iloc[-1]["close"]:.2f} USD ' + dollar * 3)
-                # Очищаем график для следующего вывода
                 plt.clf()
-                # Выходим из цикла после отправки сообщения
                 break
 
 if name == 'main':
-    # Загружаем информацию о криптовалюте
     for crypto in crypto_list:
         update_crypto_data(crypto['ticker'])
 
-    # Запускаем бота
     bot.polling()
